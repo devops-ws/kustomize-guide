@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: gitea-service
+spec:
+  selector:
+    app: gitea
+  ports:
+  - name: gitea-http
+    port: 3000
+  - name: gitea-ssh
+    port: 22
