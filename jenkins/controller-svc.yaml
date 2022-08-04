@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-jenkins
+  namespace: kubesphere-devops-system
+spec:
+  ports:
+  - name: web
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: jenkins
+  sessionAffinity: None
+  type: NodePort

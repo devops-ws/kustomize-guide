@@ -1,0 +1,20 @@
+apiVersion: v1
+data:
+  kubesphere.yaml: |-
+    authentication:
+      authenticateRateLimiterDuration: 10m0s
+      authenticateRateLimiterMaxTries: "10"
+      jwtSecret: VIMrQsZe0BUm4yOzH7cpzQpCL0yVOOro
+      loginHistoryRetentionPeriod: 168h
+      maximumClockSkew: 10s
+    devops:
+      host: http://devops-jenkins.kubesphere-devops-system
+      maxConnections: "100"
+      namespace: kubesphere-devops-system
+      password: token-change-me
+      username: admin
+      workerNamespace: kubesphere-devops-worker
+kind: ConfigMap
+metadata:
+  name: devops-config
+  namespace: kubesphere-devops-system

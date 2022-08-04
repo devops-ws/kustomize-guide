@@ -1,0 +1,105 @@
+apiVersion: v1
+data:
+  jenkins_user.yaml: |
+    jenkins:
+      mode: EXCLUSIVE
+      numExecutors: 0
+      scmCheckoutRetryCount: 2
+      disableRememberMe: true
+
+      clouds:
+        - kubernetes:
+            name: "kubernetes"
+            serverUrl: "https://kubernetes.default"
+            skipTlsVerify: true
+            namespace: "kubesphere-devops-system"
+            jenkinsUrl: "http://devops-jenkins.kubesphere-devops-system:80"
+            jenkinsTunnel: "devops-jenkins-agent.kubesphere-devops-system:50000"
+            containerCapStr: "4"
+            connectTimeout: "60"
+            readTimeout: "60"
+            maxRequestsPerHostStr: "32"
+            templates:
+              - name: "base"
+                namespace: "kubesphere-devops-system"
+                serviceAccount: "default"
+                label: "base"
+                nodeUsageMode: "NORMAL"
+                idleMinutes: "1"
+                activeDeadlineSeconds: "120"
+                slaveConnectTimeout: "1000"
+                containers:
+                - name: "base"
+                  image: "kubesphere/builder-base:v3.2.0"
+                  command: "cat"
+                  args: ""
+                  ttyEnabled: true
+                  privileged: false
+                  resourceRequestCpu: "100m"
+                  resourceLimitCpu: "4000m"
+                  resourceRequestMemory: "100Mi"
+                  resourceLimitMemory: "8192Mi"
+                workspaceVolume:
+                  emptyDirWorkspaceVolume:
+                    memory: false
+                volumes:
+                - hostPathVolume:
+                    hostPath: "/var/run/docker.sock"
+                    mountPath: "/var/run/docker.sock"
+                - hostPathVolume:
+                    hostPath: "/var/data/jenkins_sonar_cache"
+                    mountPath: "/root/.sonar/cache"
+                yaml: |
+                  spec:
+                    securityContext:
+                      fsGroup: 1000
+    jobs:
+      - script: >
+          pipelineJob('test-base') {
+              definition {
+                  cps {
+                      sandbox()
+                      script("""
+                        pipeline {
+                          agent {
+                            label 'base'
+                          }
+                          stages {
+                            stage ('test') {
+                              steps {
+                                echo "hello"
+                              }
+                            }
+                          }
+                        }
+                      """.stripIndent())
+                  }
+              }
+          }
+      - script: >
+          pipelineJob('test-go') {
+              definition {
+                  cps {
+                      sandbox()
+                      script("""
+                        pipeline {
+                          agent {
+                            label 'go'
+                          }
+                          stages {
+                            stage ('test') {
+                              steps {
+                                echo 'hello'
+                              }
+                            }
+                          }
+                        }
+                      """.stripIndent())
+                  }
+              }
+          }
+
+kind: ConfigMap
+metadata:
+  name: jenkins-casc-config
+  namespace: kubesphere-devops-system
