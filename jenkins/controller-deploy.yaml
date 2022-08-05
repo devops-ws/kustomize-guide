@@ -1,0 +1,77 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: jenkins
+  name: jenkins
+  namespace: kubesphere-devops-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: jenkins
+    spec:
+      containers:
+      - image: ghcr.io/linuxsuren/jenkins:lts
+        args:
+        - --argumentsRealm.passwd.admin=admin
+        - --argumentsRealm.roles.admin=admin
+        name: web
+        env:
+        - name: CASC_JENKINS_CONFIG
+          value: "/var/jenkins_home/casc_configs/"
+        - name: CASC_MERGE_STRATEGY
+          value: override
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -Dhudson.security.csrf.DefaultCrumbIssuer.EXCLUDE_SESSION_ID=true
+            -Djenkins.install.runSetupWizard=false
+            -Dcasc.merge.strategy=override
+            -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true
+        volumeMounts:
+        - mountPath: /etc/kubesphere/
+          name: kubesphere-config
+        - mountPath: /var/jenkins_home/casc_configs
+          name: casc-config
+        resources: {}
+        ports:
+        - containerPort: 8080
+          name: web
+          protocol: TCP
+        - containerPort: 50000
+          name: jnlp
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /login
+            port: web
+            scheme: HTTP
+          timeoutSeconds: 1
+          initialDelaySeconds: 30
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /login
+            port: web
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: jenkins-casc-config
+        name: casc-config
+      - configMap:
+          defaultMode: 420
+          name: devops-config
+        name: kubesphere-config
